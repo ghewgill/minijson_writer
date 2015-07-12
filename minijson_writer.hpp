@@ -6,6 +6,7 @@
 #include <iterator>
 #include <ostream>
 #include <iomanip>
+#include <streambuf>
 
 #define MJW_CPP11_SUPPORTED __cplusplus > 199711L || _MSC_VER >= 1800
 
@@ -508,6 +509,58 @@ void write_array(std::ostream& stream, InputIt begin, InputIt end, ValueWriter v
 
     writer.close();
 }
+
+namespace utils
+{
+
+namespace detail
+{
+
+class buffer_streambuf : public std::streambuf
+{
+private:
+
+    buffer_streambuf(const buffer_streambuf&);
+    buffer_streambuf& operator=(const buffer_streambuf&);
+
+public:
+
+    explicit buffer_streambuf(char* buffer, std::streamsize length)
+    {
+        if (length > 0)
+        {
+            std::fill(buffer, buffer + length, 0);
+            setp(buffer, buffer + length - 1);
+        }
+    }
+}; // class buffer_streambuf
+
+} // namespace detail
+
+class buffer_ostream : private detail::buffer_streambuf, public std::ostream
+{
+private:
+
+    buffer_ostream(const buffer_ostream&);
+    buffer_ostream& operator=(const buffer_ostream&);
+
+public:
+
+    explicit buffer_ostream(char* buffer, std::streamsize length) :
+        detail::buffer_streambuf(buffer, length),
+        std::ostream(this)
+    {
+    }
+
+    template<size_t Length>
+    explicit buffer_ostream(char (&buffer)[Length]) :
+        detail::buffer_streambuf(buffer, Length),
+        std::ostream(this)
+    {
+    }
+}; // class buffer_ostream
+
+} // namespace utils
 
 } // namespace minijson
 

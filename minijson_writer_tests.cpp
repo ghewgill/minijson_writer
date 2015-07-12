@@ -320,6 +320,64 @@ TEST(minijson_writer, custom_value_writer_array)
     }
 }
 
+TEST(minijson_writer_utils, buffer_ostream_char_pointer)
+{
+    char buffer[14];
+    buffer[13] = 'x';
+
+    minijson::utils::buffer_ostream stream(buffer, sizeof(buffer));
+
+    minijson::object_writer writer(stream);
+    writer.write("foo", "bar");
+    writer.close();
+
+    ASSERT_TRUE(stream);
+    ASSERT_EQ(0, buffer[13]); // ensure the string is NULL-terminated
+    ASSERT_STREQ("{\"foo\":\"bar\"}", buffer);
+}
+
+TEST(minijson_writer_utils, buffer_ostream_char_array)
+{
+    char buffer[14];
+    buffer[13] = 'x';
+
+    minijson::utils::buffer_ostream stream(buffer);
+
+    minijson::object_writer writer(stream);
+    writer.write("foo", "bar");
+    writer.close();
+
+    ASSERT_TRUE(stream);
+    ASSERT_EQ(0, buffer[13]); // ensure the string is NULL-terminated
+    ASSERT_STREQ("{\"foo\":\"bar\"}", buffer);
+}
+
+TEST(minijson_writer_utils, buffer_ostream_overflow)
+{
+    char buffer[13];
+    buffer[12] = 'x';
+    minijson::utils::buffer_ostream stream(buffer);
+
+    minijson::object_writer writer(stream);
+    writer.write("foo", "bar");
+    writer.close();
+
+    ASSERT_FALSE(stream);
+    ASSERT_EQ(0, buffer[12]); // ensure the string is NULL-terminated
+    ASSERT_STREQ("{\"foo\":\"bar\"", buffer);
+}
+
+TEST(minijson_writer_utils, buffer_ostream_empty)
+{
+    minijson::utils::buffer_ostream stream(NULL, 0);
+
+    minijson::object_writer writer(stream);
+    writer.write("foo", "bar");
+    writer.close();
+
+    ASSERT_FALSE(stream);
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
