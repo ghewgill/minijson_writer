@@ -13,6 +13,8 @@ MEMDEBUG=valgrind --leak-check=full
 LCOV_COMMAND=lcov --directory . --capture --output-file coverage.info
 GENHTML_COMMAND=genhtml --output-directory genhtml coverage.info
 
+all: $(TARGET)
+
 $(TARGET): $(TARGET).cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
 
