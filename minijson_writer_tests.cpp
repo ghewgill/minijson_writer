@@ -332,7 +332,7 @@ TEST(minijson_writer_utils, buffer_ostream_char_pointer)
 
     ASSERT_TRUE(stream);
     ASSERT_EQ(static_cast<int>(sizeof(buffer)), stream.tellp());
-    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, stream.tellp()));
+    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, static_cast<size_t>(stream.tellp())));
 }
 
 TEST(minijson_writer_utils, buffer_ostream_char_array)
@@ -347,7 +347,7 @@ TEST(minijson_writer_utils, buffer_ostream_char_array)
 
     ASSERT_TRUE(stream);
     ASSERT_EQ(static_cast<int>(sizeof(buffer)), stream.tellp());
-    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, stream.tellp()));
+    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, static_cast<size_t>(stream.tellp())));
 }
 
 void buffer_ostream_seek_helper(const char* buffer, int length, std::ostream& stream)
@@ -358,7 +358,7 @@ void buffer_ostream_seek_helper(const char* buffer, int length, std::ostream& st
 
     ASSERT_TRUE(stream);
     ASSERT_EQ(length, stream.tellp());
-    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, stream.tellp()));
+    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, static_cast<size_t>(stream.tellp())));
 }
 
 TEST(minijson_writer_utils, buffer_ostream_seek)

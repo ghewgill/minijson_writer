@@ -565,7 +565,7 @@ private:
         }
 
         setp(pbase(), epptr());
-        pbump(new_pos);
+        pbump(static_cast<int>(new_pos));
 
         return new_pos;
     }
