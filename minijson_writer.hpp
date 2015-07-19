@@ -523,15 +523,58 @@ private:
     buffer_streambuf(const buffer_streambuf&);
     buffer_streambuf& operator=(const buffer_streambuf&);
 
+    pos_type seekpos(pos_type pos, std::ios_base::openmode mode)
+    {
+        return seekoff(pos, std::ios_base::beg, mode);
+    }
+
+    pos_type seekoff(off_type offset, std::ios_base::seekdir seekdir, std::ios_base::openmode openmode)
+    {
+        static const pos_type ERROR = pos_type(off_type(-1));
+
+        if (openmode != std::ios_base::out)
+        {
+            return ERROR;
+        }
+
+        const pos_type end_pos = epptr() - pbase();
+        const pos_type cur_pos = pptr() - pbase();
+        pos_type new_pos;
+
+        switch (seekdir)
+        {
+        case std::ios_base::beg:
+            new_pos = offset;
+            break;
+
+        case std::ios_base::cur:
+            new_pos = cur_pos + offset;
+            break;
+
+        case std::ios_base::end:
+            new_pos = end_pos + offset;
+            break;
+
+        default: // to silence compiler warnings
+            return ERROR;
+        }
+
+        if ((new_pos < 0) || (new_pos > end_pos))
+        {
+            return ERROR;
+        }
+
+        setp(pbase(), epptr());
+        pbump(new_pos);
+
+        return new_pos;
+    }
+
 public:
 
     explicit buffer_streambuf(char* buffer, std::streamsize length)
     {
-        if (length > 0)
-        {
-            std::fill(buffer, buffer + length, 0);
-            setp(buffer, buffer + length - 1);
-        }
+        setp(buffer, buffer + length);
     }
 }; // class buffer_streambuf
 
