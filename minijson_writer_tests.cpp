@@ -326,13 +326,20 @@ TEST(minijson_writer_utils, buffer_ostream_char_pointer)
 
     minijson::utils::buffer_ostream stream(buffer, sizeof(buffer));
 
+    ASSERT_TRUE(stream);
+    ASSERT_EQ(0, stream.written_bytes());
+
     minijson::object_writer writer(stream);
     writer.write("foo", "bar");
+
+    ASSERT_TRUE(stream);
+    ASSERT_EQ(sizeof(buffer) - 1, stream.written_bytes());
+
     writer.close();
 
     ASSERT_TRUE(stream);
-    ASSERT_EQ(static_cast<int>(sizeof(buffer)), stream.tellp());
-    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, static_cast<size_t>(stream.tellp())));
+    ASSERT_EQ(sizeof(buffer), stream.written_bytes());
+    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(stream.buffer(), stream.written_bytes()));
 }
 
 TEST(minijson_writer_utils, buffer_ostream_char_array)
@@ -341,92 +348,20 @@ TEST(minijson_writer_utils, buffer_ostream_char_array)
 
     minijson::utils::buffer_ostream stream(buffer);
 
+    ASSERT_TRUE(stream);
+    ASSERT_EQ(0, stream.written_bytes());
+
     minijson::object_writer writer(stream);
     writer.write("foo", "bar");
+
+    ASSERT_TRUE(stream);
+    ASSERT_EQ(sizeof(buffer) - 1, stream.written_bytes());
+
     writer.close();
 
     ASSERT_TRUE(stream);
-    ASSERT_EQ(static_cast<int>(sizeof(buffer)), stream.tellp());
-    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, static_cast<size_t>(stream.tellp())));
-}
-
-void buffer_ostream_seek_helper(const char* buffer, int length, std::ostream& stream)
-{
-    minijson::object_writer writer(stream);
-    writer.write("foo", "bar");
-    writer.close();
-
-    ASSERT_TRUE(stream);
-    ASSERT_EQ(length, stream.tellp());
-    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(buffer, static_cast<size_t>(stream.tellp())));
-}
-
-TEST(minijson_writer_utils, buffer_ostream_seek)
-{
-    char buffer[13];
-    minijson::utils::buffer_ostream stream(buffer);
-
-    stream.seekp(0);
-
-    std::fill_n(buffer, sizeof(buffer), 'x');
-    buffer_ostream_seek_helper(buffer, sizeof(buffer), stream);
-
-    stream.seekp(0);
-
-    std::fill_n(buffer, sizeof(buffer), 'x');
-    buffer_ostream_seek_helper(buffer, sizeof(buffer), stream);
-
-    stream.seekp(0, std::ios_base::beg);
-
-    std::fill_n(buffer, sizeof(buffer), 'x');
-    buffer_ostream_seek_helper(buffer, sizeof(buffer), stream);
-
-    stream.seekp(-static_cast<int>(sizeof(buffer)), std::ios_base::end);
-
-    std::fill_n(buffer, sizeof(buffer), 'x');
-    buffer_ostream_seek_helper(buffer, sizeof(buffer), stream);
-
-    stream.seekp(-1, std::ios_base::cur);
-    stream.seekp(-static_cast<int>(sizeof(buffer)) + 1, std::ios_base::cur);
-
-    std::fill_n(buffer, sizeof(buffer), 'x');
-    buffer_ostream_seek_helper(buffer, sizeof(buffer), stream);
-
-    stream.seekp(-static_cast<int>(sizeof(buffer)) - 1, std::ios_base::cur); // invalid
-    ASSERT_FALSE(stream);
-    ASSERT_EQ(-1, stream.tellp());
-    stream.seekp(0); // should have no effect
-    ASSERT_FALSE(stream);
-    ASSERT_EQ(-1, stream.tellp());
-    stream.clear(); // should clear the error flag
-    ASSERT_TRUE(stream);
-    ASSERT_EQ(static_cast<int>(sizeof(buffer)), stream.tellp());
-
-    stream.seekp(0);
-
-    std::fill_n(buffer, sizeof(buffer), 'x');
-    buffer_ostream_seek_helper(buffer, sizeof(buffer), stream);
-
-    stream.seekp(sizeof(buffer), std::ios_base::beg);
-    ASSERT_TRUE(stream);
-    ASSERT_EQ(static_cast<int>(sizeof(buffer)), stream.tellp());
-    stream << 'x';
-    ASSERT_FALSE(stream);
-    ASSERT_EQ(-1, stream.tellp());
-    stream.clear(); // should clear the error flag
-    ASSERT_TRUE(stream);
-    ASSERT_EQ(static_cast<int>(sizeof(buffer)), stream.tellp());
-
-    stream.seekp(0);
-
-    std::fill_n(buffer, sizeof(buffer), 'x');
-    buffer_ostream_seek_helper(buffer, sizeof(buffer), stream);
-
-    stream.seekp(sizeof(buffer) + 1, std::ios_base::beg); // invalid
-    ASSERT_FALSE(stream);
-    stream << 'x';
-    ASSERT_FALSE(stream);
-    ASSERT_EQ(-1, stream.tellp());
+    ASSERT_EQ(sizeof(buffer), stream.written_bytes());
+    ASSERT_EQ("{\"foo\":\"bar\"}", std::string(stream.buffer(), stream.written_bytes()));
 }
 
 TEST(minijson_writer_utils, buffer_ostream_overflow)
@@ -436,10 +371,14 @@ TEST(minijson_writer_utils, buffer_ostream_overflow)
 
     minijson::object_writer writer(stream);
     writer.write("foo", "bar");
+
+    ASSERT_TRUE(stream);
+    ASSERT_EQ(sizeof(buffer), stream.written_bytes());
+
     writer.close();
 
     ASSERT_FALSE(stream);
-    ASSERT_EQ(-1, stream.tellp());
+    ASSERT_EQ(sizeof(buffer), stream.written_bytes());
     ASSERT_EQ("{\"foo\":\"bar\"", std::string(buffer, sizeof(buffer)));
 }
 
@@ -448,14 +387,14 @@ TEST(minijson_writer_utils, buffer_ostream_empty)
     minijson::utils::buffer_ostream stream(NULL, 0);
 
     ASSERT_TRUE(stream);
-    ASSERT_EQ(0, stream.tellp());
+    ASSERT_EQ(0, stream.written_bytes());
 
     minijson::object_writer writer(stream);
     writer.write("foo", "bar");
     writer.close();
 
     ASSERT_FALSE(stream);
-    ASSERT_EQ(-1, stream.tellp());
+    ASSERT_EQ(0, stream.written_bytes());
 }
 
 int main(int argc, char** argv)
