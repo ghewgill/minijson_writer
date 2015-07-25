@@ -158,6 +158,43 @@ writer.close();
 
 Similarly, a functor can be provided to `write_array` (both the method and the standalone function) to determine how each item of the range has to be written.
 
+## `buffer_ostream`
+
+It is natural to use `std::ostringstream` as the backing stream for `minijson_writer`. However, if you are looking for an alternative that does not allocate memory and does not own the underlying buffer, consider using `minijson::utils::buffer_ostream`:
+
+```
+char buffer[128];
+minijson::utils::buffer_ostream stream(buffer);
+
+minijson::object_writer writer(stream);
+writer.write("foo", "bar");
+writer.close();
+
+std::cout.write(stream.buffer(), stream.written_bytes()); // {"foo":"bar"}
+std::cout << std::endl;
+```
+
+`buffer_ostream` provides a single-argument constructor accepting a `char[]`, and a two-argument constructor accepting a `char*` and the size of the buffer.
+
+`written_bytes()` returns the number of bytes (not characters) written on the underlying buffer, and `truncated()` tells whether the JSON message was truncated because it did not fit in the buffer.
+
+```
+char buffer[128];
+minijson::utils::buffer_ostream stream(buffer, 6);
+
+minijson::object_writer writer(stream);
+writer.write("foo", "bar");
+writer.close();
+
+std::cout << std::boolalpha << stream.truncated() << std::endl; // will print true
+std::cout.write(stream.buffer(), stream.written_bytes()); // will print {"foo"
+std::cout << std::endl;
+```
+
+`buffer_ostream` is not seekable: rather than reusing it, simply create another instance wrapping the same buffer.
+
+Using `buffer_ostream` improperly may pose a security risk: keep in mind that the buffer is not zeroed before writing on it, and the string returned by `buffer()` is not `NULL`-terminated. Remember to check if the message is truncated before sending it.
+
 ## Remarks
 
 ### Encodings

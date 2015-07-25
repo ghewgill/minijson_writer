@@ -523,9 +523,19 @@ private:
     buffer_streambuf(const buffer_streambuf&);
     buffer_streambuf& operator=(const buffer_streambuf&);
 
+    bool m_truncated;
+
+    int_type overflow(int_type)
+    {
+        m_truncated = true;
+
+        return traits_type::eof();
+    }
+
 public:
 
-    explicit buffer_streambuf(char* buffer, std::streamsize length)
+    explicit buffer_streambuf(char* buffer, size_t length) :
+        m_truncated(false)
     {
         setp(buffer, buffer + length);
     }
@@ -535,24 +545,25 @@ public:
         return pbase();
     }
 
-    size_t written_bytes() const
+    std::ptrdiff_t written_bytes() const
     {
         return pptr() - pbase();
     }
+
+    bool truncated() const
+    {
+        return m_truncated;
+    }
+
 }; // class buffer_streambuf
 
 } // namespace detail
 
 class buffer_ostream : private detail::buffer_streambuf, public std::ostream
 {
-private:
-
-    buffer_ostream(const buffer_ostream&);
-    buffer_ostream& operator=(const buffer_ostream&);
-
 public:
 
-    explicit buffer_ostream(char* buffer, std::streamsize length) :
+    explicit buffer_ostream(char* buffer, size_t length) :
         detail::buffer_streambuf(buffer, length),
         std::ostream(this)
     {
@@ -567,6 +578,7 @@ public:
 
     using detail::buffer_streambuf::buffer;
     using detail::buffer_streambuf::written_bytes;
+    using detail::buffer_streambuf::truncated;
 
 }; // class buffer_ostream
 

@@ -338,13 +338,14 @@ TEST(minijson_writer_utils, buffer_ostream_char_pointer)
     writer.close();
 
     ASSERT_TRUE(stream);
+    ASSERT_FALSE(stream.truncated());
     ASSERT_EQ(sizeof(buffer), stream.written_bytes());
     ASSERT_EQ("{\"foo\":\"bar\"}", std::string(stream.buffer(), stream.written_bytes()));
 }
 
 TEST(minijson_writer_utils, buffer_ostream_char_array)
 {
-    char buffer[13];
+    char buffer[32];
 
     minijson::utils::buffer_ostream stream(buffer);
 
@@ -355,12 +356,13 @@ TEST(minijson_writer_utils, buffer_ostream_char_array)
     writer.write("foo", "bar");
 
     ASSERT_TRUE(stream);
-    ASSERT_EQ(sizeof(buffer) - 1, stream.written_bytes());
+    ASSERT_EQ(12, stream.written_bytes());
 
     writer.close();
 
     ASSERT_TRUE(stream);
-    ASSERT_EQ(sizeof(buffer), stream.written_bytes());
+    ASSERT_FALSE(stream.truncated());
+    ASSERT_EQ(13, stream.written_bytes());
     ASSERT_EQ("{\"foo\":\"bar\"}", std::string(stream.buffer(), stream.written_bytes()));
 }
 
@@ -378,6 +380,7 @@ TEST(minijson_writer_utils, buffer_ostream_overflow)
     writer.close();
 
     ASSERT_FALSE(stream);
+    ASSERT_TRUE(stream.truncated());
     ASSERT_EQ(sizeof(buffer), stream.written_bytes());
     ASSERT_EQ("{\"foo\":\"bar\"", std::string(buffer, sizeof(buffer)));
 }
@@ -394,6 +397,7 @@ TEST(minijson_writer_utils, buffer_ostream_empty)
     writer.close();
 
     ASSERT_FALSE(stream);
+    ASSERT_TRUE(stream.truncated());
     ASSERT_EQ(0, stream.written_bytes());
 }
 
