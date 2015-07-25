@@ -61,6 +61,54 @@ struct get_value_type
     typedef typename MJW_LIB_NS::remove_cv<typename std::iterator_traits<InputIt>::value_type>::type type;
 };
 
+template<size_t Size = 128>
+class buffered_writer
+{
+private:
+
+    std::ostream& m_stream;
+    char m_buffer[Size];
+    size_t m_offset;
+
+public:
+
+    explicit buffered_writer(std::ostream& stream) :
+        m_stream(stream),
+        m_offset(0)
+    {
+    }
+
+    buffered_writer& operator<<(char c)
+    {
+        if (m_offset == Size)
+        {
+            flush();
+        }
+
+        m_buffer[m_offset++] = c;
+
+        return *this;
+    }
+
+    template<size_t N>
+    buffered_writer& operator<<(const char (&str)[N])
+    {
+        for (size_t i = 0; i < N - 1; i++)
+        {
+            operator<<(str[i]);
+        }
+
+        return *this;
+    }
+
+    void flush()
+    {
+        m_stream.write(m_buffer, m_offset);
+
+        m_offset = 0;
+    }
+};
+
 namespace
 {
 
@@ -73,49 +121,58 @@ void adjust_stream_settings(std::ostream& stream)
 
 void write_quoted_string(std::ostream& stream, const char* str)
 {
-    stream << '"';
+    stream << std::hex << std::right << std::setfill('0');
+
+    buffered_writer<> writer(stream);
+
+    writer << '"';
 
     while (*str != '\0')
     {
         switch (*str)
         {
         case '"':
-            stream << "\\\"";
+            writer << "\\\"";
             break;
 
         case '\\':
-            stream << "\\\\";
+            writer << "\\\\";
             break;
 
         case '\n':
-            stream << "\\n";
+            writer << "\\n";
             break;
 
         case '\r':
-            stream << "\\r";
+            writer << "\\r";
             break;
 
         case '\t':
-            stream << "\\t";
+            writer << "\\t";
             break;
 
         default:
             if ((*str > 0 && *str < 32) || *str == 127) // ASCII control characters (NUL is not supported)
             {
-                stream << std::hex << std::right << std::setfill('0');
-                stream << "\\u" << std::setw(4) << static_cast<unsigned>(*str);
-                stream << std::dec;
+                writer << "\\u";
+
+                writer.flush();
+                stream << std::setw(4) << static_cast<unsigned>(*str);
             }
             else
             {
-                stream << *str;
+                writer << *str;
             }
             break;
         }
         str++;
-     }
+    }
 
-     stream << '"';
+    writer << '"';
+
+    writer.flush();
+
+    stream << std::dec;
 }
 
 } // unnamed namespace
